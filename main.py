@@ -19,7 +19,7 @@ def ocr_core(img):
     return text
 
 
-img = cv2.imread('img.png')
+img = cv2.imread('Obrazy/test2.png')
 
 
 def get_grayscale(image):
@@ -35,17 +35,20 @@ def thresholding(image):
 
 
 img = get_grayscale(img)
+cv2.imshow('gray',img)
 img = thresholding(img)
-img = remove_noise(img)
-
+cv2.imshow('thresh',img)
+img = remove_noise(img) #Jak nie czyta jakiegos obrazka to trzeba pobawic sie tym przetwarzaniem, np dla test 5 po remove noise nie przeczyta bo usuwa po prostu kontury liter
+cv2.imshow('noise',img)
+cv2.waitKey(0)
 mytext = ocr_core(img)
 print(mytext)
 
-#myobj = gTTS(text=mytext, lang='pl', slow=False)
+#myobj = gTTS(text=mytext, lang='pl', slow=False) #metoda z googl
 
-#myobj.save("test.mp3")
+#myobj.save("test.mp3") #zapisywanie do pliku
 
-#os.system("test.mp3") #or os.system("start test.mp3")
+#os.system("test.mp3") #or os.system("start test.mp3") #otwarzanie
 
 # initialisation pyttsx3
 engine = pyttsx3.init()
