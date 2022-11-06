@@ -1,16 +1,53 @@
 import cv2
-import numpy as np
-from PIL import Image
+import numpy
+
+from tkinter import *
+from tkinter import filedialog
+
 import pytesseract
-# Google online only speach
-#from gtts import gTTS
-
-# Offline speachs
 import pyttsx3
-
 # This module is imported so that we can
 # play the converted audio
 import os
+
+from PIL import ImageTk, Image
+
+
+class MyVariables:
+    src = ""
+    img = None
+
+    def __init__(self, src="", img=None):
+        self._img = img
+        self._src = src
+
+    def set_img(self, img):
+        self._img = img
+
+    def get_img(self):
+        return self._img
+
+    def get_src(self):
+        return self._src
+
+    def set_src(self, src):
+        self._src = src
+
+
+global panel
+core = MyVariables()
+# Okienko
+root = Tk()
+
+root.geometry("550x350")
+root.resizable(width=True, height=True)
+root.configure(bg='ghost white')
+root.title("Text speaker")
+
+Label(root, text="Image", font="arial 20 bold", bg='white smoke').pack(side=TOP, ipadx=5, ipady=5)
+
+panel = Label(root, image="")
+panel.pack(side=TOP, ipadx=5, ipady=5, expand=True)
 
 
 def ocr_core(img):
@@ -19,7 +56,37 @@ def ocr_core(img):
     return text
 
 
-img = cv2.imread('Obrazy/test2.png')
+def open_file():
+    src = filedialog.askopenfilename(initialdir="Obrazy", title='Select a file') #BIERZE SCIEZKE ABSOLUTNA I GDY ZNAJDUJA SIE SPACE TO POWODUJE BLEDY
+    core.set_src(src)
+    return src
+
+
+# UWAGA GDY SCIEZKA DO OBRAZKA MA SPACJE TO NIE DZIALA MOWIENIE
+def open_img():
+    panel.config(image='')
+    src = open_file()
+
+    cv2img = cv2.imread(src)
+    core.set_img(cv2img)
+
+    img = Image.open(src)
+
+    img = img.resize((200, 200), Image.Resampling.LANCZOS)
+    img = ImageTk.PhotoImage(img)
+    panel.config(image=img)
+    panel.image = img
+    panel.pack(side=TOP, ipadx=5,
+               ipady=5, expand=True)
+
+
+def Exit():
+    root.destroy()
+
+
+def Reset():
+    core.set_img(None)
+    panel.config(image='')
 
 
 def get_grayscale(image):
@@ -34,36 +101,47 @@ def thresholding(image):
     return cv2.threshold(image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
 
 
-img = get_grayscale(img)
-cv2.imshow('gray',img)
-img = thresholding(img)
-cv2.imshow('thresh',img)
-img = remove_noise(img) #Jak nie czyta jakiegos obrazka to trzeba pobawic sie tym przetwarzaniem, np dla test 5 po remove noise nie przeczyta bo usuwa po prostu kontury liter
-cv2.imshow('noise',img)
-cv2.waitKey(0)
-mytext = ocr_core(img)
-print(mytext)
+def set_property_speach():
+    # Sets speed percent
+    # Can be more than 100
+    engine.setProperty('rate', 150)
+    # Set volume 0-1s
+    engine.setProperty('volume', 0.7)
+    # Use another voice
+    # engine.setProperty('voice', voice_id)
+    # engine.save_to_file(mytext, "test.mp3")
 
-#myobj = gTTS(text=mytext, lang='pl', slow=False) #metoda z googl
 
-#myobj.save("test.mp3") #zapisywanie do pliku
+def say_text():
+    txt = get_grayscale(core.get_img())
+    # cv2.imshow('gray', txt)
+    txt = thresholding(txt)
+    # cv2.imshow('thresh', txt)
+    txt = remove_noise(txt)
+    # Jak nie czyta jakiegos obrazka to trzeba pobawic sie tym przetwarzaniem, np dla test 5 po remove noise nie przeczyta bo usuwa po prostu kontury liter
+    # cv2.imshow('noise', txt)
+    # cv2.waitKey(0)
+    txt = ocr_core(txt)
+    print(txt)
+    engine.say(txt)
+    engine.runAndWait()
 
-#os.system("test.mp3") #or os.system("start test.mp3") #otwarzanie
+
+def set_button():
+    Button(root, text='Open Image', font='arial 15 bold', width='10', command=open_img).pack(side=LEFT, ipadx=5,
+                                                                                             ipady=5, expand=True)
+    Button(root, text="PLAY", font='arial 15 bold', command=say_text, width='10').pack(side=LEFT, ipadx=5,
+                                                                                       ipady=5, expand=True)
+    Button(root, font='arial 15 bold', text='RESET', width='6', command=Reset).pack(side=LEFT, ipadx=5,
+                                                                                    ipady=5, expand=True)
+    Button(root, font='arial 15 bold', text='EXIT', width='4', command=Exit, bg='OrangeRed1').pack(side=LEFT, ipadx=5,
+                                                                                                   ipady=5, expand=True)
+
 
 # initialisation pyttsx3
 engine = pyttsx3.init()
 
-# Sets speed percent
-# Can be more than 100
-#engine.setProperty('rate', 150)
-# Set volume 0-1
-#engine.setProperty('volume', 0.7)
-# Use another voice
-#engine.setProperty('voice', voice_id)
-#engine.save_to_file(mytext, "test.mp3")
+set_button()
+set_property_speach()
 
-# testing pyttsx3
-engine.say(mytext)
-engine.runAndWait()
-
-
+root.mainloop()
