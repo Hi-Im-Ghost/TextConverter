@@ -35,6 +35,7 @@ class MyVariables:
 
 
 global panel
+bOptionsOpen = False
 core = MyVariables()
 # Okienko
 root = Tk()
@@ -44,20 +45,32 @@ root.resizable(width=True, height=True)
 root.configure(bg='ghost white')
 root.title("Text speaker")
 
-Label(root, text="Image", font="arial 20 bold", bg='white smoke').pack(side=TOP, ipadx=5, ipady=5)
+Label(root, text="Image", font="arial 20 bold",
+      bg='white smoke').pack(side=TOP, ipadx=5, ipady=5)
 
 panel = Label(root, image="")
 panel.pack(side=TOP, ipadx=5, ipady=5, expand=True)
 
 
+def Save():
+    return
+
+
+# Przycisk zapisywania musi być globalny
+butSave = Button(root, font='arial 15 bold',
+                 text='SAVE', width='4', command=Save)
+
+
 def ocr_core(img):
-    pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+    pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files (x86)\Tesseract-OCR\tesseract.exe'
     text = pytesseract.image_to_string(img)
     return text
 
 
 def open_file():
-    src = filedialog.askopenfilename(initialdir="Obrazy", title='Select a file') #BIERZE SCIEZKE ABSOLUTNA I GDY ZNAJDUJA SIE SPACE TO POWODUJE BLEDY
+    # BIERZE SCIEZKE ABSOLUTNA I GDY ZNAJDUJA SIE SPACE TO POWODUJE BLEDY
+    src = filedialog.askopenfilename(
+        initialdir="Obrazy", title='Select a file')
     core.set_src(src)
     return src
 
@@ -72,7 +85,21 @@ def open_img():
 
     img = Image.open(src)
 
-    img = img.resize((200, 200), Image.Resampling.LANCZOS)
+    # Pobiera wymiary otwieranego obrazu
+    imH, imW, Channels = cv2img.shape
+    # Bool jest true jak szerokość obrazu jest większa niż jego wysokość
+    bIsLandscape = (imW > imH)
+
+    if (bIsLandscape):
+        # Jeśli szerokość większa niż wysokość skaluj obrazek do szerokości i zachowaj proporcje przy wysokości
+        imResizeRatio = 400 / imW
+        imGotoSize = [400, round(imH * imResizeRatio)]
+    else:
+        # Skaluj do wysokości i zachowaj proporcje przy szerokości
+        imResizeRatio = 200 / imH
+        imGotoSize = [round(imW * imResizeRatio), 200]
+
+    img = img.resize(imGotoSize, Image.Resampling.LANCZOS)
     img = ImageTk.PhotoImage(img)
     panel.config(image=img)
     panel.image = img
@@ -80,13 +107,39 @@ def open_img():
                ipady=5, expand=True)
 
 
-def Exit():
-    root.destroy()
-
-
 def Reset():
     core.set_img(None)
     panel.config(image='')
+    butSave['state'] = DISABLED
+
+
+def Options():
+    global bOptionsOpen
+    if (bOptionsOpen):
+        return
+
+    bOptionsOpen = True
+    # Utwórz okno opcji zależne od główego okna
+    optionsWindow = Toplevel(root)
+
+    optionsWindow.geometry("550x350")
+    optionsWindow.resizable(width=True, height=True)
+    optionsWindow.configure(bg='ghost white')
+    optionsWindow.title("Text speaker options")
+
+    Label(optionsWindow, text="Voice", font="arial 20 bold",
+          bg='white smoke').pack(side=TOP, ipadx=5, ipady=5)
+    Label(optionsWindow, text="Parameters", font="arial 20 bold",
+          bg='white smoke').pack(side=TOP, ipadx=5, ipady=5)
+
+    optionsWindow.protocol(
+        "WM_DELETE_WINDOW", lambda: option_window_destroy_sequence(optionsWindow))
+
+
+def option_window_destroy_sequence(window):
+    global bOptionsOpen
+    bOptionsOpen = False
+    window.destroy()
 
 
 def get_grayscale(image):
@@ -126,22 +179,35 @@ def say_text():
     engine.say(txt)
     engine.runAndWait()
 
+    # Włącz przycisk do zapisywania
+    butSave['state'] = NORMAL
 
-def set_button():
+
+def set_buttons():
+    # Otwieranie nowego obrazu z dysku
     Button(root, text='Open Image', font='arial 15 bold', width='10', command=open_img).pack(side=LEFT, ipadx=5,
                                                                                              ipady=5, expand=True)
+    # Próba odczytania tekstu z obrazka
     Button(root, text="PLAY", font='arial 15 bold', command=say_text, width='10').pack(side=LEFT, ipadx=5,
                                                                                        ipady=5, expand=True)
+    # Zapisanie pliku mp3 z odczytywanym tekstem
+    butSave.pack(side=LEFT, ipadx=5, ipady=5, expand=True)
+    butSave['state'] = DISABLED
+    # Wyczyszczenie obrazu z programu
     Button(root, font='arial 15 bold', text='RESET', width='6', command=Reset).pack(side=LEFT, ipadx=5,
                                                                                     ipady=5, expand=True)
-    Button(root, font='arial 15 bold', text='EXIT', width='4', command=Exit, bg='OrangeRed1').pack(side=LEFT, ipadx=5,
-                                                                                                   ipady=5, expand=True)
+    # Otwarcie okna opcji
+    Button(root, font='arial 15 bold', text='Options', width='6', command=Options).pack(side=LEFT, ipadx=5,
+                                                                                        ipady=5, expand=True)
+    # Zakończenie działania programu
+    # Button(root, font='arial 15 bold', text='EXIT', width='4', command=Exit, bg='OrangeRed1').pack(side=LEFT, ipadx=5,
+    #                                                                                               ipady=5, expand=True)
 
 
 # initialisation pyttsx3
 engine = pyttsx3.init()
 
-set_button()
+set_buttons()
 set_property_speach()
 
 root.mainloop()
