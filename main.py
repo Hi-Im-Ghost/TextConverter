@@ -16,6 +16,7 @@ from PIL import ImageTk, Image
 class MyVariables:
     src = ""
     img = None
+    saidText = ""
 
     def __init__(self, src="", img=None):
         self._img = img
@@ -53,6 +54,8 @@ panel.pack(side=TOP, ipadx=5, ipady=5, expand=True)
 
 
 def Save():
+    engine.save_to_file(core.saidText, "file.mp3")
+    engine.runAndWait()
     return
 
 
@@ -106,9 +109,16 @@ def open_img():
     panel.pack(side=TOP, ipadx=5,
                ipady=5, expand=True)
 
+    # Przekonwertuj z obrazka na tekst
+    save_text()
+
+    # Włącz przycisk do zapisywania
+    butSave['state'] = NORMAL
+
 
 def Reset():
     core.set_img(None)
+    core.saidText = ""
     panel.config(image='')
     butSave['state'] = DISABLED
 
@@ -165,7 +175,7 @@ def set_property_speach():
     # engine.save_to_file(mytext, "test.mp3")
 
 
-def say_text():
+def save_text():
     txt = get_grayscale(core.get_img())
     # cv2.imshow('gray', txt)
     txt = thresholding(txt)
@@ -174,13 +184,13 @@ def say_text():
     # Jak nie czyta jakiegos obrazka to trzeba pobawic sie tym przetwarzaniem, np dla test 5 po remove noise nie przeczyta bo usuwa po prostu kontury liter
     # cv2.imshow('noise', txt)
     # cv2.waitKey(0)
-    txt = ocr_core(txt)
-    print(txt)
-    engine.say(txt)
-    engine.runAndWait()
+    core.saidText = ocr_core(txt)
+    print(core.saidText)
 
-    # Włącz przycisk do zapisywania
-    butSave['state'] = NORMAL
+
+def say_text():
+    engine.say(core.saidText)
+    engine.runAndWait()
 
 
 def set_buttons():
