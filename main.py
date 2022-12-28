@@ -35,9 +35,14 @@ class MyVariables:
         self._src = src
 
 
+class MyOptions:
+    volume = 100
+
+
 global panel
 bOptionsOpen = False
 core = MyVariables()
+options = MyOptions()
 # Okienko
 root = Tk()
 
@@ -137,13 +142,27 @@ def Options():
     optionsWindow.configure(bg='ghost white')
     optionsWindow.title("Text speaker options")
 
-    Label(optionsWindow, text="Voice", font="arial 20 bold",
+    # Slider głośności
+    Label(optionsWindow, text="Volume", font="arial 20 bold",
           bg='white smoke').pack(side=TOP, ipadx=5, ipady=5)
+
+    s = Scale(optionsWindow, from_=0, to=100, orient=HORIZONTAL,
+              command=lambda x: set_volume(s.get()))
+    s.set(options.volume)
+    s.pack()
+
+    s.update()
+
+    # Parametry TTS
     Label(optionsWindow, text="Parameters", font="arial 20 bold",
           bg='white smoke').pack(side=TOP, ipadx=5, ipady=5)
 
     optionsWindow.protocol(
         "WM_DELETE_WINDOW", lambda: option_window_destroy_sequence(optionsWindow))
+
+
+def set_volume(value):
+    options.volume = value
 
 
 def option_window_destroy_sequence(window):
@@ -184,11 +203,16 @@ def save_text():
     # Jak nie czyta jakiegos obrazka to trzeba pobawic sie tym przetwarzaniem, np dla test 5 po remove noise nie przeczyta bo usuwa po prostu kontury liter
     # cv2.imshow('noise', txt)
     # cv2.waitKey(0)
+
     core.saidText = ocr_core(txt)
     print(core.saidText)
 
 
 def say_text():
+    # Ustaw parametry zgodne z opcjami
+    engine.setProperty('volume', options.volume)
+
+    # Wypowiedz tekst
     engine.say(core.saidText)
     engine.runAndWait()
 
