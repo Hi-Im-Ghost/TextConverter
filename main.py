@@ -37,6 +37,8 @@ class MyVariables:
 
 class MyOptions:
     volume = 100
+    rate = 150
+    #voiceName = StringVar()
 
 
 global panel
@@ -58,17 +60,6 @@ panel = Label(root, image="")
 panel.pack(side=TOP, ipadx=5, ipady=5, expand=True)
 
 
-def Save():
-    engine.save_to_file(core.saidText, "file.mp3")
-    engine.runAndWait()
-    return
-
-
-# Przycisk zapisywania musi być globalny
-butSave = Button(root, font='arial 15 bold',
-                 text='SAVE', width='4', command=Save)
-
-
 def ocr_core(img):
     pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files (x86)\Tesseract-OCR\tesseract.exe'
     text = pytesseract.image_to_string(img)
@@ -83,7 +74,24 @@ def open_file():
     return src
 
 
+def save_file():
+    # Aktualizuj ustawienia TTS
+    set_property_speach()
+
+    types = [('Audio file', '*.mp3')]
+    file = filedialog.asksaveasfile(filetypes=types, defaultextension=types)
+
+    engine.save_to_file(core.saidText, file.name)
+    engine.runAndWait()
+
+
+# Przycisk zapisywania musi być globalny
+butSave = Button(root, font='arial 15 bold',
+                 text='SAVE', width='4', command=save_file)
+
 # UWAGA GDY SCIEZKA DO OBRAZKA MA SPACJE TO NIE DZIALA MOWIENIE
+
+
 def open_img():
     panel.config(image='')
     src = open_file()
@@ -143,26 +151,46 @@ def Options():
     optionsWindow.title("Text speaker options")
 
     # Slider głośności
-    Label(optionsWindow, text="Volume", font="arial 20 bold",
-          bg='white smoke').pack(side=TOP, ipadx=5, ipady=5)
-
-    s = Scale(optionsWindow, from_=0, to=100, orient=HORIZONTAL,
-              command=lambda x: set_volume(s.get()))
-    s.set(options.volume)
-    s.pack()
-
-    s.update()
+    setup_volume_slider(optionsWindow)
 
     # Parametry TTS
     Label(optionsWindow, text="Parameters", font="arial 20 bold",
           bg='white smoke').pack(side=TOP, ipadx=5, ipady=5)
 
+    setup_rate_slider(optionsWindow)
+
     optionsWindow.protocol(
         "WM_DELETE_WINDOW", lambda: option_window_destroy_sequence(optionsWindow))
 
 
+def setup_volume_slider(window):
+    Label(window, text="Volume", font="arial 20 bold",
+          bg='white smoke').pack(side=TOP, ipadx=5, ipady=5)
+
+    s = Scale(window, from_=0, to=100, orient=HORIZONTAL,
+              command=lambda x: set_volume(s.get() / 100))
+    s.set(options.volume)
+    s.pack()
+    s.update()
+
+
+def setup_rate_slider(window):
+    Label(window, text="Rate", font="arial 16",
+          bg='white smoke').pack(side=TOP, ipadx=0, ipady=0)
+
+    s = Scale(window, from_=50, to=300, orient=HORIZONTAL,
+              command=lambda x: set_rate(s.get()))
+    s.set(options.rate)
+    s.pack()
+    s.update()
+
+
 def set_volume(value):
     options.volume = value
+
+
+def set_rate(value):
+    options.rate = value
 
 
 def option_window_destroy_sequence(window):
@@ -186,12 +214,15 @@ def thresholding(image):
 def set_property_speach():
     # Sets speed percent
     # Can be more than 100
-    engine.setProperty('rate', 150)
+    engine.setProperty('rate', options.rate)
     # Set volume 0-1s
-    engine.setProperty('volume', 0.7)
+    engine.setProperty('volume', options.volume)
     # Use another voice
     # engine.setProperty('voice', voice_id)
     # engine.save_to_file(mytext, "test.mp3")
+    voices = engine.getProperty('voices')
+    for voice in voices:
+        print(voice.name)
 
 
 def save_text():
@@ -210,7 +241,7 @@ def save_text():
 
 def say_text():
     # Ustaw parametry zgodne z opcjami
-    engine.setProperty('volume', options.volume)
+    set_property_speach()
 
     # Wypowiedz tekst
     engine.say(core.saidText)
@@ -241,6 +272,7 @@ def set_buttons():
 # initialisation pyttsx3
 engine = pyttsx3.init()
 
+#options.voiceName = engine.getProperty('voice').name
 set_buttons()
 set_property_speach()
 
