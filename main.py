@@ -77,6 +77,7 @@ def open_file():
 def save_file():
     # Aktualizuj ustawienia TTS
     set_property_speach()
+    save_text()
 
     types = [('Audio file', '*.mp3')]
     file = filedialog.asksaveasfile(filetypes=types, defaultextension=types)
@@ -220,9 +221,9 @@ def set_property_speach():
     # Use another voice
     # engine.setProperty('voice', voice_id)
     # engine.save_to_file(mytext, "test.mp3")
-    voices = engine.getProperty('voices')
-    for voice in voices:
-        print(voice.name)
+    #voices = engine.getProperty('voices')
+    # for voice in voices:
+    #    print(voice.name)
 
 
 def save_text():
