@@ -75,15 +75,21 @@ def open_file():
 
 
 def save_file():
+    types = [('Audio file', '*.mp3')]
+    file = filedialog.asksaveasfilename(
+        filetypes=types, defaultextension=types)
+
+    # Nic nie rób jak okno zamknięte przyciskiem "cancel"
+    if (file is None):
+        return
+
     # Aktualizuj ustawienia TTS
     set_property_speach()
     save_text()
 
-    types = [('Audio file', '*.mp3')]
-    file = filedialog.asksaveasfile(filetypes=types, defaultextension=types)
-
-    engine.save_to_file(core.saidText, file.name)
+    engine.save_to_file(core.saidText, file)
     engine.runAndWait()
+    print(file)
 
 
 # Przycisk zapisywania musi być globalny
