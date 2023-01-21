@@ -16,6 +16,7 @@ from PIL import ImageTk, Image
 class MyVariables:
     src = ""
     img = None
+    img_size = []
     saidText = ""
 
     def __init__(self, src="", img=None):
@@ -34,10 +35,17 @@ class MyVariables:
     def set_src(self, src):
         self._src = src
 
+    def set_size(self, size):
+        self.img_size = size
+
+    def get_size(self):
+        return self.img_size
+
 
 class MyOptions:
-    volume = 100
+    volume = 1  # 0 - 1
     rate = 150
+    noiseRemove = 5
     #voiceName = StringVar()
 
 
@@ -58,6 +66,13 @@ Label(root, text="Image", font="arial 20 bold",
 
 panel = Label(root, image="")
 panel.pack(side=TOP, ipadx=5, ipady=5, expand=True)
+
+
+def opencv_to_tkinter(img):
+    gray = cv2.split(img)
+    img = cv2.merge(gray)
+    im = Image.fromarray(img)
+    return im
 
 
 def ocr_core(img):
@@ -122,6 +137,7 @@ def open_img():
         imResizeRatio = 200 / imH
         imGotoSize = [round(imW * imResizeRatio), 200]
 
+    core.set_size(imGotoSize)
     img = img.resize(imGotoSize, Image.Resampling.LANCZOS)
     img = ImageTk.PhotoImage(img)
     panel.config(image=img)
@@ -134,9 +150,18 @@ def open_img():
 
     # Włącz przycisk do zapisywania
     butSave['state'] = NORMAL
+    print_core_data()
+
+
+def print_core_data():
+    src = core.get_src()
+    size = core.get_size()
+    print(f"src: {src}")
+    print(f"img_size: {size}")
 
 
 def Reset():
+    # Czyści dane obrazka z programu
     core.set_img(None)
     core.saidText = ""
     panel.config(image='')
@@ -144,6 +169,7 @@ def Reset():
 
 
 def Options():
+    # Otwiera okno opcji jak nie jest jeszcze otwarte
     global bOptionsOpen
     if (bOptionsOpen):
         return
@@ -165,6 +191,10 @@ def Options():
           bg='white smoke').pack(side=TOP, ipadx=5, ipady=5)
 
     setup_rate_slider(optionsWindow)
+    setup_image_parameter_options(optionsWindow)
+
+    # create_preview_image(optionsWindow)
+    update_preview_image()
 
     optionsWindow.protocol(
         "WM_DELETE_WINDOW", lambda: option_window_destroy_sequence(optionsWindow))
@@ -172,11 +202,11 @@ def Options():
 
 def setup_volume_slider(window):
     Label(window, text="Volume", font="arial 20 bold",
-          bg='white smoke').pack(side=TOP, ipadx=5, ipady=5)
+          bg='white smoke').pack(side=TOP, ipadx=0, ipady=0)
 
     s = Scale(window, from_=0, to=100, orient=HORIZONTAL,
               command=lambda x: set_volume(s.get() / 100))
-    s.set(options.volume)
+    s.set(options.volume * 100)
     s.pack()
     s.update()
 
@@ -200,9 +230,35 @@ def set_rate(value):
     options.rate = value
 
 
+def setup_image_parameter_options(window):
+    return
+
+
+def update_preview_image():
+    if (core.get_src() == ''):
+        return
+
+    img = convert_image()
+    img = opencv_to_tkinter(img)
+    img = img.resize(core.get_size(), Image.Resampling.LANCZOS)
+    img = ImageTk.PhotoImage(img)
+    panel.config(image=img)
+    panel.image = img
+    panel.update()
+
+
 def option_window_destroy_sequence(window):
     global bOptionsOpen
     bOptionsOpen = False
+
+    if (core.get_src() != ''):
+        img = Image.open(core.get_src())
+        img = img.resize(core.get_size(), Image.Resampling.LANCZOS)
+        img = ImageTk.PhotoImage(img)
+        panel.config(image=img)
+        panel.image = img
+        panel.update()
+
     window.destroy()
 
 
@@ -211,37 +267,33 @@ def get_grayscale(image):
 
 
 def remove_noise(image):
-    return cv2.medianBlur(image, 5)
+    # return cv2.medianBlur(image, options.noiseRemove)
+    return cv2.fastNlMeansDenoising(image, None, 3, 7, 21)
 
 
 def thresholding(image):
-    return cv2.threshold(image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
+    # return cv2.threshold(image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
+    return cv2.adaptiveThreshold(image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                                 cv2.THRESH_BINARY, 11, 2)
 
 
 def set_property_speach():
     # Sets speed percent
     # Can be more than 100
     engine.setProperty('rate', options.rate)
-    # Set volume 0-1s
+    # Set volume 0-1
     engine.setProperty('volume', options.volume)
-    # Use another voice
-    # engine.setProperty('voice', voice_id)
-    # engine.save_to_file(mytext, "test.mp3")
-    #voices = engine.getProperty('voices')
-    # for voice in voices:
-    #    print(voice.name)
+
+
+def convert_image():
+    txt = get_grayscale(core.get_img())
+    txt = thresholding(txt)
+    txt = remove_noise(txt)
+    return txt
 
 
 def save_text():
-    txt = get_grayscale(core.get_img())
-    # cv2.imshow('gray', txt)
-    txt = thresholding(txt)
-    # cv2.imshow('thresh', txt)
-    txt = remove_noise(txt)
-    # Jak nie czyta jakiegos obrazka to trzeba pobawic sie tym przetwarzaniem, np dla test 5 po remove noise nie przeczyta bo usuwa po prostu kontury liter
-    # cv2.imshow('noise', txt)
-    # cv2.waitKey(0)
-
+    txt = convert_image()
     core.saidText = ocr_core(txt)
     print(core.saidText)
 
