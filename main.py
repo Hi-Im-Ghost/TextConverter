@@ -45,7 +45,10 @@ class MyVariables:
 class MyOptions:
     volume = 1  # 0 - 1
     rate = 150
-    noiseRemove = 5
+    #noiseRemove = 5
+    denoising_strength = 3          # nieparzysta
+    denoising_template_size = 7     # nieparzysta
+    denoising_search_size = 21      # im więcej tym silniej czyści szum
     #voiceName = StringVar()
 
 
@@ -212,7 +215,7 @@ def setup_volume_slider(window):
 
 
 def setup_rate_slider(window):
-    Label(window, text="Rate", font="arial 16",
+    Label(window, text="Rate", font="arial 12",
           bg='white smoke').pack(side=TOP, ipadx=0, ipady=0)
 
     s = Scale(window, from_=50, to=300, orient=HORIZONTAL,
@@ -231,7 +234,44 @@ def set_rate(value):
 
 
 def setup_image_parameter_options(window):
-    return
+    Label(window, text="Denoising strength", font="arial 12",
+          bg='white smoke').pack(side=TOP, ipadx=0, ipady=0)
+    e1 = Entry(window, width=3)
+    e1.pack()
+    # e1.setvar(str(options.denoising_strength))
+    e1.insert(0, str(options.denoising_strength))
+
+    Label(window, text="Denoising template size", font="arial 12",
+          bg='white smoke').pack(side=TOP, ipadx=0, ipady=0)
+    e2 = Entry(window, width=3)
+    e2.pack()
+    e2.insert(0, str(options.denoising_template_size))
+
+    Label(window, text="Denoising search size", font="arial 12",
+          bg='white smoke').pack(side=TOP, ipadx=0, ipady=0)
+    e3 = Entry(window, width=3)
+    e3.pack()
+    e3.insert(0, str(options.denoising_search_size))
+
+    b = Button(window, text='Update', command=lambda: update_options(
+        int(e1.get()), int(e2.get()), int(e3.get())))
+    b.pack()
+
+
+def update_options(strength, template, search):
+    # strength i template mają być nieparzyste
+    if (strength % 2 == 0):
+        strength -= 1
+    if (template % 2 == 0):
+        template -= 1
+
+    print(f"Updated: {strength}, {template}, {search}")
+
+    options.denoising_strength = strength
+    options.denoising_template_size = template
+    options.denoising_search_size = search
+
+    update_preview_image()
 
 
 def update_preview_image():
@@ -268,7 +308,12 @@ def get_grayscale(image):
 
 def remove_noise(image):
     # return cv2.medianBlur(image, options.noiseRemove)
-    return cv2.fastNlMeansDenoising(image, None, 3, 7, 21)
+    denoising_strength = options.denoising_strength
+    denoising_template_size = options.denoising_template_size
+    denoising_search_size = options.denoising_search_size
+    print(
+        f"Denoising the image with: {denoising_strength}, {denoising_template_size}, {denoising_search_size}")
+    return cv2.fastNlMeansDenoising(image, None, denoising_strength, denoising_template_size, denoising_search_size)
 
 
 def thresholding(image):
