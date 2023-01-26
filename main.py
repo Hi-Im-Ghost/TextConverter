@@ -139,12 +139,6 @@ def open_img():
         imGotoSize = [round(imW * imResizeRatio), 200]
 
     core.set_size(imGotoSize)
-    #img = img.resize(imGotoSize, Image.Resampling.LANCZOS)
-    #img = ImageTk.PhotoImage(img)
-    # panel.config(image=img)
-    #panel.image = img
-    # panel.pack(side=TOP, ipadx=5,
-    #           ipady=5, expand=True)
     update_preview_image()
     # Przekonwertuj z obrazka na tekst
     save_text()
@@ -260,12 +254,11 @@ def update_options(blur, blocksize, constant):
 
     print(f"Updated: {blur}, {blocksize}, {constant}")
 
-    # Regenerate the image
-
     options.blur_strength = blur
     options.treshold_blocksize = blocksize
     options.treshold_constant = constant
     update_preview_image(True)
+    # Regenerate the image
     save_text()
 
 
@@ -290,15 +283,6 @@ def option_window_destroy_sequence(window):
     global bOptionsOpen
     bOptionsOpen = False
     update_preview_image()
-
-    # if (core.get_src() != ''):
-    #    img = Image.open(core.get_src())
-    #    img = img.resize(core.get_size(), Image.Resampling.LANCZOS)
-    #    img = ImageTk.PhotoImage(img)
-    #    panel.config(image=img)
-    #    panel.image = img
-    #    panel.update()
-
     window.destroy()
 
 
@@ -311,9 +295,8 @@ def remove_noise(image):
 
 
 def thresholding(image):
-    # return cv2.threshold(image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
     return cv2.adaptiveThreshold(image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-                                 cv2.THRESH_BINARY, options.treshold_blocksize, options.treshold_constant)  # 255, 11, 2
+                                 cv2.THRESH_BINARY, options.treshold_blocksize, options.treshold_constant)
 
 
 def set_property_speach():
@@ -362,15 +345,11 @@ def set_buttons():
     # Otwarcie okna opcji
     Button(root, font='arial 15 bold', text='Options', width='6', command=Options).pack(side=LEFT, ipadx=5,
                                                                                         ipady=5, expand=True)
-    # Zakończenie działania programu
-    # Button(root, font='arial 15 bold', text='EXIT', width='4', command=Exit, bg='OrangeRed1').pack(side=LEFT, ipadx=5,
-    #                                                                                               ipady=5, expand=True)
 
 
 # initialisation pyttsx3
 engine = pyttsx3.init()
 
-#options.voiceName = engine.getProperty('voice').name
 set_buttons()
 set_property_speach()
 
