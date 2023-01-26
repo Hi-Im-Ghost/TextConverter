@@ -45,11 +45,9 @@ class MyVariables:
 class MyOptions:
     volume = 1  # 0 - 1
     rate = 150
-    #noiseRemove = 5
-    denoising_strength = 3          # nieparzysta
-    denoising_template_size = 7     # nieparzysta
-    denoising_search_size = 21      # im więcej tym silniej czyści szum
-    #voiceName = StringVar()
+    blur_strength = 5
+    treshold_blocksize = 11
+    treshold_constant = 2
 
 
 global panel
@@ -141,26 +139,18 @@ def open_img():
         imGotoSize = [round(imW * imResizeRatio), 200]
 
     core.set_size(imGotoSize)
-    img = img.resize(imGotoSize, Image.Resampling.LANCZOS)
-    img = ImageTk.PhotoImage(img)
-    panel.config(image=img)
-    panel.image = img
-    panel.pack(side=TOP, ipadx=5,
-               ipady=5, expand=True)
-
+    #img = img.resize(imGotoSize, Image.Resampling.LANCZOS)
+    #img = ImageTk.PhotoImage(img)
+    # panel.config(image=img)
+    #panel.image = img
+    # panel.pack(side=TOP, ipadx=5,
+    #           ipady=5, expand=True)
+    update_preview_image()
     # Przekonwertuj z obrazka na tekst
     save_text()
 
     # Włącz przycisk do zapisywania
     butSave['state'] = NORMAL
-    print_core_data()
-
-
-def print_core_data():
-    src = core.get_src()
-    size = core.get_size()
-    print(f"src: {src}")
-    print(f"img_size: {size}")
 
 
 def Reset():
@@ -197,7 +187,7 @@ def Options():
     setup_image_parameter_options(optionsWindow)
 
     # create_preview_image(optionsWindow)
-    update_preview_image()
+    update_preview_image(True)
 
     optionsWindow.protocol(
         "WM_DELETE_WINDOW", lambda: option_window_destroy_sequence(optionsWindow))
@@ -234,52 +224,61 @@ def set_rate(value):
 
 
 def setup_image_parameter_options(window):
-    Label(window, text="Denoising strength", font="arial 12",
+    Label(window, text="Blur strength", font="arial 12",
           bg='white smoke').pack(side=TOP, ipadx=0, ipady=0)
     e1 = Entry(window, width=3)
     e1.pack()
-    # e1.setvar(str(options.denoising_strength))
-    e1.insert(0, str(options.denoising_strength))
+    e1.insert(0, str(options.blur_strength))
 
-    Label(window, text="Denoising template size", font="arial 12",
+    Label(window, text="Treshold block size", font="arial 12",
           bg='white smoke').pack(side=TOP, ipadx=0, ipady=0)
     e2 = Entry(window, width=3)
     e2.pack()
-    e2.insert(0, str(options.denoising_template_size))
+    e2.insert(0, str(options.treshold_blocksize))
 
-    Label(window, text="Denoising search size", font="arial 12",
+    Label(window, text="Treshold constant", font="arial 12",
           bg='white smoke').pack(side=TOP, ipadx=0, ipady=0)
     e3 = Entry(window, width=3)
     e3.pack()
-    e3.insert(0, str(options.denoising_search_size))
+    e3.insert(0, str(options.treshold_constant))
 
     b = Button(window, text='Update', command=lambda: update_options(
         int(e1.get()), int(e2.get()), int(e3.get())))
     b.pack()
 
 
-def update_options(strength, template, search):
-    # strength i template mają być nieparzyste
-    if (strength % 2 == 0):
-        strength -= 1
-    if (template % 2 == 0):
-        template -= 1
+def update_options(blur, blocksize, constant):
+    # blur i blocksize mają być nieparzyste i większe od 3
+    if (blocksize < 3):
+        blocksize = 3
+    if (blur < 3):
+        blur = 3
+    if (blocksize % 2 == 0):
+        blocksize -= 1
+    if (blur % 2 == 0):
+        blur -= 1
 
-    print(f"Updated: {strength}, {template}, {search}")
+    print(f"Updated: {blur}, {blocksize}, {constant}")
 
-    options.denoising_strength = strength
-    options.denoising_template_size = template
-    options.denoising_search_size = search
+    # Regenerate the image
 
-    update_preview_image()
+    options.blur_strength = blur
+    options.treshold_blocksize = blocksize
+    options.treshold_constant = constant
+    update_preview_image(True)
+    save_text()
 
 
-def update_preview_image():
+def update_preview_image(converted=False):
     if (core.get_src() == ''):
         return
 
-    img = convert_image()
-    img = opencv_to_tkinter(img)
+    if (converted):
+        img = convert_image()
+        img = opencv_to_tkinter(img)
+    else:
+        img = Image.open(core.get_src())
+
     img = img.resize(core.get_size(), Image.Resampling.LANCZOS)
     img = ImageTk.PhotoImage(img)
     panel.config(image=img)
@@ -290,14 +289,15 @@ def update_preview_image():
 def option_window_destroy_sequence(window):
     global bOptionsOpen
     bOptionsOpen = False
+    update_preview_image()
 
-    if (core.get_src() != ''):
-        img = Image.open(core.get_src())
-        img = img.resize(core.get_size(), Image.Resampling.LANCZOS)
-        img = ImageTk.PhotoImage(img)
-        panel.config(image=img)
-        panel.image = img
-        panel.update()
+    # if (core.get_src() != ''):
+    #    img = Image.open(core.get_src())
+    #    img = img.resize(core.get_size(), Image.Resampling.LANCZOS)
+    #    img = ImageTk.PhotoImage(img)
+    #    panel.config(image=img)
+    #    panel.image = img
+    #    panel.update()
 
     window.destroy()
 
@@ -307,19 +307,13 @@ def get_grayscale(image):
 
 
 def remove_noise(image):
-    # return cv2.medianBlur(image, options.noiseRemove)
-    denoising_strength = options.denoising_strength
-    denoising_template_size = options.denoising_template_size
-    denoising_search_size = options.denoising_search_size
-    print(
-        f"Denoising the image with: {denoising_strength}, {denoising_template_size}, {denoising_search_size}")
-    return cv2.fastNlMeansDenoising(image, None, denoising_strength, denoising_template_size, denoising_search_size)
+    return cv2.medianBlur(image, options.blur_strength)
 
 
 def thresholding(image):
     # return cv2.threshold(image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
     return cv2.adaptiveThreshold(image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-                                 cv2.THRESH_BINARY, 11, 2)
+                                 cv2.THRESH_BINARY, options.treshold_blocksize, options.treshold_constant)  # 255, 11, 2
 
 
 def set_property_speach():
