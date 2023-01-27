@@ -120,6 +120,8 @@ butSave = Button(root, font='arial 15 bold',
 def open_img():
     panel.config(image='')
     src = open_file()
+    if (src == ''):
+        return
 
     cv2img = cv2.imread(src)
     core.set_img(cv2img)
@@ -244,12 +246,16 @@ def setup_image_parameter_options(window):
     e3.pack()
     e3.insert(0, str(options.treshold_constant))
 
-    b = Button(window, text='Update', command=lambda: update_options(
-        int(e1.get()), int(e2.get()), int(e3.get())))
+    b = Button(window, text='Update',
+               command=lambda: update_options(e1, e2, e3))
     b.pack()
 
 
-def update_options(blur, blocksize, constant):
+def update_options(e1, e2, e3):
+    blur = int(e1.get())
+    blocksize = int(e2.get())
+    constant = int(e3.get())
+
     # blur i blocksize mają być nieparzyste i większe od 3
     if (blocksize < 3):
         blocksize = 3
@@ -262,13 +268,26 @@ def update_options(blur, blocksize, constant):
 
     print(f"Updated: {blur}, {blocksize}, {constant}")
 
+    # Wyczyść okna z wartościami
+    e1.delete(0, 'end')
+    e2.delete(0, 'end')
+    e3.delete(0, 'end')
+
+    # Wstaw prawidłowe wartości okien
+    e1.insert(0, str(blur))
+    e2.insert(0, str(blocksize))
+    e3.insert(0, str(constant))
+
+    # Ustaw nowe wartości w opcjach
     options.blur_strength = blur
     options.treshold_blocksize = blocksize
     options.treshold_constant = constant
-    update_preview_image(True)
-    # Regenerate the image
-    save_text()
-    update_preview_text()
+
+    if (core.get_src() != ''):
+        update_preview_image(True)
+        # Wygeneruj TTS ponownie
+        save_text()
+        update_preview_text()
 
 
 def update_preview_image(converted=False):
