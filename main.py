@@ -228,13 +228,13 @@ def set_rate(value):
 
 
 def setup_image_parameter_options(window):
-    Label(window, text="Blur strength", font="arial 12",
+    Label(window, text="Blur strength (0, 3+)", font="arial 12",
           bg='white smoke').pack(side=TOP, ipadx=0, ipady=0)
     e1 = Entry(window, width=3)
     e1.pack()
     e1.insert(0, str(options.blur_strength))
 
-    Label(window, text="Treshold block size", font="arial 12",
+    Label(window, text="Treshold block size (3+)", font="arial 12",
           bg='white smoke').pack(side=TOP, ipadx=0, ipady=0)
     e2 = Entry(window, width=3)
     e2.pack()
@@ -265,6 +265,9 @@ def update_options(e1, e2, e3):
         blocksize -= 1
     if (blur % 2 == 0):
         blur -= 1
+
+    if (int(e1.get()) == 0):
+        blur = 0
 
     print(f"Updated: {blur}, {blocksize}, {constant}")
 
@@ -327,6 +330,8 @@ def get_grayscale(image):
 
 
 def remove_noise(image):
+    if (options.blur_strength == 0):
+        return image
     return cv2.medianBlur(image, options.blur_strength)
 
 
