@@ -51,6 +51,7 @@ class MyOptions:
 
 
 global panel
+global textPanel
 bOptionsOpen = False
 core = MyVariables()
 options = MyOptions()
@@ -67,6 +68,7 @@ Label(root, text="Image", font="arial 20 bold",
 
 panel = Label(root, image="")
 panel.pack(side=TOP, ipadx=5, ipady=5, expand=True)
+textPanel = Label()
 
 
 def opencv_to_tkinter(img):
@@ -158,6 +160,7 @@ def Reset():
 def Options():
     # Otwiera okno opcji jak nie jest jeszcze otwarte
     global bOptionsOpen
+    global textPanel
     if (bOptionsOpen):
         return
 
@@ -165,7 +168,7 @@ def Options():
     # Utwórz okno opcji zależne od główego okna
     optionsWindow = Toplevel(root)
 
-    optionsWindow.geometry("550x350")
+    optionsWindow.geometry("550x450")
     optionsWindow.resizable(width=True, height=True)
     optionsWindow.configure(bg='ghost white')
     optionsWindow.title("Text speaker options")
@@ -179,6 +182,11 @@ def Options():
 
     setup_rate_slider(optionsWindow)
     setup_image_parameter_options(optionsWindow)
+
+    # delete
+    textPanel = Label(optionsWindow, text="None", font="arial 11")
+    textPanel.pack(side=BOTTOM)
+    update_preview_text()
 
     # create_preview_image(optionsWindow)
     update_preview_image(True)
@@ -260,6 +268,7 @@ def update_options(blur, blocksize, constant):
     update_preview_image(True)
     # Regenerate the image
     save_text()
+    update_preview_text()
 
 
 def update_preview_image(converted=False):
@@ -277,6 +286,14 @@ def update_preview_image(converted=False):
     panel.config(image=img)
     panel.image = img
     panel.update()
+
+
+def update_preview_text():
+    global textPanel
+    if (core.get_src() != ''):
+        textPanel.configure(text=core.saidText)
+        textPanel.configure(font="arial 11")
+        textPanel.update()
 
 
 def option_window_destroy_sequence(window):
