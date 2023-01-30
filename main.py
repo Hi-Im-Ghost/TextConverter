@@ -70,20 +70,21 @@ panel = Label(root, image="")
 panel.pack(side=TOP, ipadx=5, ipady=5, expand=True)
 textPanel = Label()
 
-
+#Funkcja do zwracania przekonwertowanego obrazka
 def opencv_to_tkinter(img):
     gray = cv2.split(img)
     img = cv2.merge(gray)
     im = Image.fromarray(img)
     return im
 
-
+#Funkcja do uruchomienia silnika tesseract i pobrania oraz zwrócenia z wskazego obrazka tekstu
 def ocr_core(img):
-    pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files (x86)\Tesseract-OCR\tesseract.exe'
+    # WARUNEKIEM DZIALANIA JEST POSIADANIE PROGRAMU TESSERACT. PONIZEJ TRZEBA PODAC SCIEZKE
+    pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
     text = pytesseract.image_to_string(img)
     return text
 
-
+#Funkcja do uruchomienia okna wyboru obrazka
 def open_file():
     # BIERZE SCIEZKE ABSOLUTNA I GDY ZNAJDUJA SIE SPACE TO POWODUJE BLEDY
     src = filedialog.askopenfilename(
@@ -91,7 +92,7 @@ def open_file():
     core.set_src(src)
     return src
 
-
+#Funkcja do zapisywania pliku audio czytanego tekstu
 def save_file():
     types = [('Audio file', '*.mp3')]
     file = filedialog.asksaveasfilename(
@@ -114,9 +115,7 @@ def save_file():
 butSave = Button(root, font='arial 15 bold',
                  text='SAVE', width='4', command=save_file)
 
-# UWAGA GDY SCIEZKA DO OBRAZKA MA SPACJE TO NIE DZIALA MOWIENIE
-
-
+#Funkcja do ustawienia wybranego obrazka w miejsce etykiety okna glownego aplikacji
 def open_img():
     panel.config(image='')
     src = open_file()
@@ -158,7 +157,7 @@ def Reset():
     panel.config(image='')
     butSave['state'] = DISABLED
 
-
+#Utworzenie okna do konfiguracji
 def Options():
     # Otwiera okno opcji jak nie jest jeszcze otwarte
     global bOptionsOpen
@@ -196,7 +195,7 @@ def Options():
     optionsWindow.protocol(
         "WM_DELETE_WINDOW", lambda: option_window_destroy_sequence(optionsWindow))
 
-
+#Funkcja do utworzenia slidera dla glosnosci czytania
 def setup_volume_slider(window):
     Label(window, text="Volume", font="arial 20 bold",
           bg='white smoke').pack(side=TOP, ipadx=0, ipady=0)
@@ -207,7 +206,7 @@ def setup_volume_slider(window):
     s.pack()
     s.update()
 
-
+#Funkcja do utworzenia slidera dla szybkosci czytania
 def setup_rate_slider(window):
     Label(window, text="Rate", font="arial 12",
           bg='white smoke').pack(side=TOP, ipadx=0, ipady=0)
@@ -218,15 +217,15 @@ def setup_rate_slider(window):
     s.pack()
     s.update()
 
-
+#Funkcja do ustawienia glosnosci
 def set_volume(value):
     options.volume = value
 
-
+#Funkcja do ustawienia szybkosci
 def set_rate(value):
     options.rate = value
 
-
+#Funkcja do utworzenia pol konfiguracyjnych dla parametrow progowania oraz rozmycia
 def setup_image_parameter_options(window):
     Label(window, text="Blur strength (0, 3+)", font="arial 12",
           bg='white smoke').pack(side=TOP, ipadx=0, ipady=0)
@@ -250,7 +249,7 @@ def setup_image_parameter_options(window):
                command=lambda: update_options(e1, e2, e3))
     b.pack()
 
-
+#Funkcja do aktualizacji parametrow progowania i rozmycia
 def update_options(e1, e2, e3):
     blur = int(e1.get())
     blocksize = int(e2.get())
@@ -292,7 +291,7 @@ def update_options(e1, e2, e3):
         save_text()
         update_preview_text()
 
-
+#Funckja do aktualizacji podgladu obrazka
 def update_preview_image(converted=False):
     if (core.get_src() == ''):
         return
@@ -309,7 +308,7 @@ def update_preview_image(converted=False):
     panel.image = img
     panel.update()
 
-
+#Funkcja do aktualizacji podgladu tekstu, rozpoznanego z zdjecia przez aplikacje
 def update_preview_text():
     global textPanel
     if (core.get_src() != ''):
@@ -317,29 +316,29 @@ def update_preview_text():
         textPanel.configure(font="arial 11")
         textPanel.update()
 
-
+#Funkcja do zamykania okna opcji
 def option_window_destroy_sequence(window):
     global bOptionsOpen
     bOptionsOpen = False
     update_preview_image()
     window.destroy()
 
-
+#Funkcja do zwracania przekonwertowanego do skali szarosci obrazka
 def get_grayscale(image):
     return cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-
+#Funkcja do usuwania szumu z obrazu za pomoca medianBlur
 def remove_noise(image):
     if (options.blur_strength == 0):
         return image
     return cv2.medianBlur(image, options.blur_strength)
 
-
+#Funkcja do progowania obrazu
 def thresholding(image):
     return cv2.adaptiveThreshold(image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
                                  cv2.THRESH_BINARY, options.treshold_blocksize, options.treshold_constant)
 
-
+#Funkcja do ustawiania parametrow czytania
 def set_property_speach():
     # Sets speed percent
     # Can be more than 100
@@ -347,20 +346,20 @@ def set_property_speach():
     # Set volume 0-1
     engine.setProperty('volume', options.volume)
 
-
+#Funkcja do zwracania tekstu po przekonwertowaniu obrazu
 def convert_image():
     txt = get_grayscale(core.get_img())
     txt = thresholding(txt)
     txt = remove_noise(txt)
     return txt
 
-
+#Funkcja do zapisywania tekstu do przeczytania
 def save_text():
     txt = convert_image()
     core.saidText = ocr_core(txt)
     print(core.saidText)
 
-
+#Funkcja do uruchomienia czytania
 def say_text():
     # Ustaw parametry zgodne z opcjami
     set_property_speach()
@@ -369,7 +368,7 @@ def say_text():
     engine.say(core.saidText)
     engine.runAndWait()
 
-
+#Funkcja do ustawienia przyciskow glownego okna
 def set_buttons():
     # Otwieranie nowego obrazu z dysku
     Button(root, text='Open Image', font='arial 15 bold', width='10', command=open_img).pack(side=LEFT, ipadx=5,
